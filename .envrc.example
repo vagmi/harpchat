@@ -1,0 +1,2 @@
+export DATABASE_URL=postgres://postgres:postgres@localhost:5432/harpchat
+export RUST_LOG=info,harpchat=debug

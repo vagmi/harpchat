@@ -1,3 +1,4 @@
+mod db;
 mod error;
 mod state;
 mod web;
@@ -5,5 +6,7 @@ mod web;
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-    web::start_server().await.unwrap();
+    let db_pool = db::setup_db().await.unwrap();
+    let state = state::AppState { db_pool };
+    web::start_server(state).await.unwrap();
 }
