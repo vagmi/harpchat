@@ -4,5 +4,6 @@ mod web;
 
 #[tokio::main]
 async fn main() {
-    println!("Hello, world!");
+    tracing_subscriber::fmt::init();
+    web::start_server().await.unwrap();
 }
