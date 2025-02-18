@@ -6,8 +6,12 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.95"
 axum = "0.8.1"
+genai = "0.1.21"
 sqlx = {version="0.8.3", features=["runtime-tokio-rustls", "postgres"]}
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = {version="0.3.19", features=["env-filter"]}
+
+[patch.crates-io]
+genai = {git = "https://github.com/vagmi/rust-genai.git"}
