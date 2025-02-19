@@ -5,6 +5,7 @@ use axum::{
 use maud::{html, Markup};
 
 pub mod index;
+pub mod conversations;
 
 #[derive(Debug, Clone)]
 pub struct HtmxContext {
@@ -14,7 +15,7 @@ pub struct HtmxContext {
 }
 
 impl HtmxContext {
-    fn is_partial(&self) -> bool {
+    pub fn is_partial(&self) -> bool {
         self.is_hx_req && !self.is_boost
     }
 }
@@ -53,7 +54,7 @@ where
 }
 
 fn nav(current_path: &str) -> Markup {
-    let paths = vec![("/home", "Home"), ("/about", "About")];
+    let paths = vec![("/conversations", "Conversations"), ("/about", "About")];
     html! {
         nav ."my-2" hx-boost="true" {
             ul {
@@ -66,6 +67,13 @@ fn nav(current_path: &str) -> Markup {
                 }
             }
         }
+    }
+}
+pub fn not_found(context: HtmxContext) -> Markup {
+    html! {
+        h1 { "404 Not Found" }
+        p { "The page you are looking for does not exist." }
+        p { (context.uri) }
     }
 }
 
@@ -92,7 +100,7 @@ fn layout(title: Option<String>, body: Markup, context: HtmxContext) -> Markup {
                 
                 footer ."fixed bottom-0 w-full bg-white border-t py-4" {
                     div ."container mx-auto" {
-                        "footer"
+                        a href="https://github.com/vagmi/harpchat" target="_blank" { "github.com/vagmi/harpchat" }
                     }
                 }
             }

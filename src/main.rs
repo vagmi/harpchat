@@ -1,6 +1,7 @@
 mod db;
 mod error;
 mod state;
+mod model;
 mod web;
 
 #[tokio::main]
