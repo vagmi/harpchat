@@ -7,7 +7,7 @@ edition = "2021"
 anyhow = "1.0.95"
 async-trait = "0.1.86"
 axum = {version="0.8.1", features=["macros"]}
-genai = "0.1.21"
+genai = "0.1.22-WIP"
 maud = { version = "0.27.0", features = ["axum"] }
 sqlx = {version="0.8.3", features=["runtime-tokio-rustls", "postgres"]}
 thiserror = "2.0.11"

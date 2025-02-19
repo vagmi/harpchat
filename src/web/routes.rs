@@ -8,7 +8,7 @@ use super::views::{self, HtmxContext};
 
 #[debug_handler]
 async fn home_view(context: HtmxContext) -> impl IntoResponse {
-    views::index::IndexView{context}
+    views::index::ConversationsIndex{context}
 }
 
 #[debug_handler]
