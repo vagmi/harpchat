@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.95"
+async-trait = "0.1.86"
 axum = {version="0.8.1", features=["macros"]}
 genai = "0.1.21"
 maud = { version = "0.27.0", features = ["axum"] }

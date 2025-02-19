@@ -1,6 +1,7 @@
 use std::env;
 
 mod routes;
+mod views;
 
 use crate::{error::Result, state::AppState};
 use axum::Router;
