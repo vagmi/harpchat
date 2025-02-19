@@ -4,6 +4,7 @@ use axum::{
 };
 use maud::{html, Markup};
 
+pub mod icons;
 pub mod index;
 pub mod conversations;
 
