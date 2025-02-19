@@ -95,7 +95,7 @@ fn layout(title: Option<String>, body: Markup, context: HtmxContext) -> Markup {
                     (nav(&context.uri.to_string()));
                 }
 
-                div ."flex-1 container mx-auto overflow-y-auto pb-20" {
+                div ."app flex-1 container mx-auto overflow-y-auto pb-20" {
                     (body)
                 }
                 

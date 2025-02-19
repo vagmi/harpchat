@@ -1,33 +1,47 @@
-use axum::{debug_handler, extract::Path, http::header, response::{IntoResponse, Redirect}, routing::{get, post}, Form, Router};
-use maud::Render;
+use axum::{debug_handler, extract::{Path, State}, http::{header, HeaderMap}, response::{IntoResponse, Redirect}, routing::{get, post}, Form, Router};
+use maud::{Markup, Render};
 
-use crate::{model::{Conversation, Message}, state::AppState};
+use crate::{model::{Conversation, Message}, state::AppState, error::Result};
 
 use super::views::{self, conversations, not_found, HtmxContext};
 
 
 
 #[debug_handler]
-async fn home_view(context: HtmxContext) -> impl IntoResponse {
-    let conversations = Conversation::demo().await;
-    conversations::ConversationsIndex::new(context, conversations)
+async fn conversations_view(State(app_state): State<AppState>, context: HtmxContext) -> Result<Markup> {
+    let conversations = Conversation::get_all(app_state.db_pool).await?;
+    Ok(conversations::ConversationsIndex::new(context, conversations).render())
 }
 
 #[debug_handler]
-async fn conversation_view(context: HtmxContext, Path(id): Path<i32>) -> impl IntoResponse {
-    let conversations = Conversation::demo().await;
+async fn new_conversation(State(app_state): State<AppState>, context: HtmxContext) -> Result<(HeaderMap, Markup)> {
+    let pool = app_state.db_pool;
+    let conversation = Conversation::create(pool.clone(), "New Conversation").await?;
+    let conversations = Conversation::get_all(pool.clone()).await?;
+    let messages = conversation.get_messages(pool).await?;
+    let mut headers = HeaderMap::new();
+    headers.insert("HX-Push-Url", format!("/conversations/{}", conversation.id).parse().unwrap());
+    return Ok((headers, conversations::ConversationsIndex::new_with_detail(
+                context, conversations, 
+                conversation.clone(), messages).render()))
+}
+
+#[debug_handler]
+async fn conversation_view(State(app_state): State<AppState>, context: HtmxContext, Path(id): Path<i32>) -> Result<Markup> {
+    let pool= app_state.db_pool.clone();
+    let conversations = Conversation::get_all(pool.clone()).await?;
     let cloned_conv = conversations.clone();
     let conversation = cloned_conv.iter().filter(|c| c.id == id).next();
     if let Some(conversation) = conversation.clone() {
-        let messages = conversation.get_messages().await;
+        let messages = conversation.get_messages(pool).await?;
         match context.is_partial() {
-            true => return conversations::ConversationDetail{context, conversation: conversation.clone(), messages: messages.clone()}.render(),
-            false => return conversations::ConversationsIndex::new_with_detail(
+            true => return Ok(conversations::ConversationDetail{context, conversation: conversation.clone(), messages: messages.clone()}.render()),
+            false => return Ok(conversations::ConversationsIndex::new_with_detail(
                 context, conversations, 
-                conversation.clone(), messages).render()
+                conversation.clone(), messages).render())
         }
     } else {
-        return not_found(context);
+        return Ok(not_found(context));
     }
 }
 
@@ -37,28 +51,30 @@ pub struct MessageForm {
 }
 
 #[debug_handler]
-async fn send_message(context: HtmxContext, Path(id): Path<i32>, Form(msg_form): Form<MessageForm>) -> impl IntoResponse {
+async fn send_message(State(state): State<AppState>, context: HtmxContext, Path(id): Path<i32>, Form(msg_form): Form<MessageForm>) -> Result<Markup> {
     let msg = msg_form.message;
-    let conversations = Conversation::demo().await;
+    let pool = state.db_pool;
+    let conversations = Conversation::get_all(pool.clone()).await?;
     let cloned_conv = conversations.clone();
     let conversation = cloned_conv.iter().filter(|c| c.id == id).next();
     if let Some(conversation) = conversation.clone() {
-        let mut messages = conversation.get_messages().await;
+        let mut messages = conversation.get_messages(pool).await?;
         messages.push(Message {
             id: messages.len() as i32 + 1,
             conversation_id: conversation.id,
-            author: "You".to_string(),
+            role: "You".to_string(),
             body: msg,
             created_at: chrono::Local::now().naive_local(),
+            updated_at: chrono::Local::now().naive_local(),
         });
         match context.is_partial() {
-            true => return conversations::ConversationDetail{context, conversation: conversation.clone(), messages: messages.clone()}.render(),
-            false => return conversations::ConversationsIndex::new_with_detail(
+            true => return Ok(conversations::ConversationDetail{context, conversation: conversation.clone(), messages: messages.clone()}.render()),
+            false => return Ok(conversations::ConversationsIndex::new_with_detail(
                 context, conversations, 
-                conversation.clone(), messages).render()
+                conversation.clone(), messages).render())
         }
     } else {
-        return not_found(context);
+        return Ok(not_found(context));
     }
 }
 
@@ -80,7 +96,8 @@ async fn index() -> impl IntoResponse {
 pub fn setup_view_router() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
-        .route("/conversations", get(home_view))
+        .route("/conversations", get(conversations_view))
+        .route("/conversations", post(new_conversation))
         .route("/conversations/{id}", get(conversation_view))
         .route("/conversations/{id}", post(send_message))
         .route("/about", get(about_view))

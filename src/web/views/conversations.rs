@@ -1,5 +1,5 @@
 use axum::response::IntoResponse;
-use maud::{html, Render};
+use maud::{html, Markup, Render};
 
 use crate::model::{Conversation, Message};
 
@@ -35,6 +35,35 @@ impl ConversationsIndex {
             messages: Some(messages),
         }
     }
+
+    fn conversation_list(&self) -> Markup {
+        let create_button = html! {
+            button ."bg-violet-500 text-white p-2 rounded-lg" 
+                   hx-post="/conversations" 
+                   hx-target=".app" { 
+                       "New Conversation" 
+                   }
+            
+        };
+        if self.conversations.is_empty() {
+            return html! {
+                "Welcome to Harp Chat! No conversations yet."
+                (create_button)
+            };
+        }
+        html! {
+            @for conversation in &self.conversations {
+                @let url = format!("/conversations/{}", conversation.id);
+                div ."my-2 p-3 font-large bg-violet-100 rounded-lg" { 
+                    a href={(url)} hx-get={(url)} hx-target=".conversation-detail" hx-push-url="true" {
+                        (conversation.title) 
+                    }
+                } 
+            }
+
+            (create_button)
+        }
+    }
 }
 
 impl Render for ConversationsIndex {
@@ -42,14 +71,7 @@ impl Render for ConversationsIndex {
         let body = html! {
             div ."flex flex-row w-full h-full" {
                 div ."flex flex-col basis-1/4" {
-                    @for conversation in &self.conversations {
-                        @let url = format!("/conversations/{}", conversation.id);
-                       div ."my-2 p-3 font-large bg-violet-100 rounded-lg" { 
-                           a href={(url)} hx-get={(url)} hx-target=".conversation-detail" hx-push-url="true" {
-                           (conversation.title) 
-                           }
-                       } 
-                    }
+                    (self.conversation_list())
                 }
                 div ."flex flex-col basis-3/4 conversation-detail h-full ml-2" {
                     @if let Some(selected_conversation) = &self.selected_conversation {
@@ -60,9 +82,11 @@ impl Render for ConversationsIndex {
                         };
                         (conv_detail.render());
                     } @else {
+                        div ."flex flex-col h-full w-full justify-center text-center bg-violet-100"  {
                         h1 { "This is the conversations page" }
                         p ."text-2xl" { "Awesome conversations content goes here" }
                         p { (self.context.uri) }
+                        }
                     }
                 }
             }
@@ -91,7 +115,7 @@ impl Render for ConversationDetail {
                 h1 ."text-xl" { (self.conversation.title) }
                 @for message in &self.messages {
                     div {
-                        p { (message.author) }
+                        p { (message.role) }
                         p { (message.body) }
                     }
                 }
