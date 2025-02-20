@@ -20,6 +20,8 @@ pub enum HarpError {
     JsonError(#[from] serde_json::Error),
     #[error("Error sending message: {0}")]
     SendError(#[from] tokio::sync::mpsc::error::SendError<Message>),
+    #[error("Error processing with AI: {0}")]
+    GenAIError(#[from] genai::Error),
 }
 
 impl IntoResponse for HarpError {

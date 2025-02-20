@@ -3,6 +3,7 @@ mod error;
 mod state;
 mod model;
 mod web;
+mod ai;
 
 #[tokio::main]
 async fn main() {

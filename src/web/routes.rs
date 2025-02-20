@@ -104,34 +104,15 @@ pub struct MessageForm {
 #[debug_handler]
 async fn send_message(
     State(state): State<AppState>,
-    context: HtmxContext,
     Path(id): Path<i32>,
     Form(msg_form): Form<MessageForm>,
-) -> Result<Markup> {
+) -> Result<()> {
     let msg = msg_form.message;
     let pool = state.db_pool;
     let conversation = Conversation::find(pool.clone(), id).await?;
-    let messages = conversation.create_message(pool.clone(), &msg).await?;
-    match context.is_partial() {
-        true => {
-            return Ok(ConversationDetail {
-                context,
-                conversation: conversation.clone(),
-                messages: messages.clone(),
-            }
-            .render())
-        }
-        false => {
-            let conversations = Conversation::get_all(pool.clone()).await?;
-            return Ok(conversations::ConversationsIndex::new_with_detail(
-                context,
-                conversations,
-                conversation.clone(),
-                messages,
-            )
-            .render());
-        }
-    }
+    let _messages = conversation.create_message(pool.clone(), &msg, None).await?;
+    conversation.send_to_ai(pool.clone()).await?;
+    Ok(())
 }
 #[debug_handler]
 async fn subscribe_handler(

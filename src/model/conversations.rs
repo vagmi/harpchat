@@ -44,12 +44,13 @@ impl Conversation {
         .await?;
         Ok(recs)
     }
-    pub async fn create_message(&self, pool: PgPool, message: &str) -> Result<Vec<Message>> {
+    pub async fn create_message(&self, pool: PgPool, message: &str, role: Option<&str>) -> Result<Vec<Message>> {
+        let role = role.unwrap_or("User");
         let _rec = sqlx::query_as!(
             Message,
             r#"INSERT INTO messages (conversation_id, role, body) VALUES ($1, $2, $3) RETURNING *"#,
             self.id,
-            "user",
+            role,
             message
         )
         .fetch_one(&pool)
