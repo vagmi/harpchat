@@ -1,16 +1,23 @@
+use crate::{error::Result, model::Message};
 use chrono::NaiveDateTime;
-use sqlx::{postgres::PgPoolCopyExt, PgPool};
-use crate::error::Result;
+use sqlx::PgPool;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Conversation {
     pub id: i32,
     pub title: String,
-    pub created_at: chrono::NaiveDateTime,
-    pub updated_at: chrono::NaiveDateTime,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 impl Conversation {
+    pub async fn find(pool: PgPool, id: i32) -> Result<Conversation> {
+        let rec = sqlx::query_as!(Conversation, r#"SELECT * FROM conversations WHERE id = $1"#, id)
+            .fetch_one(&pool)
+            .await?;
+        Ok(rec)
+    }
     pub async fn create(pool: PgPool, title: &str) -> Result<Conversation> {
         let rec = sqlx::query_as!(
             Conversation,
@@ -22,12 +29,9 @@ impl Conversation {
         Ok(rec)
     }
     pub async fn get_all(pool: PgPool) -> Result<Vec<Conversation>> {
-        let recs = sqlx::query_as!(
-            Conversation,
-            r#"SELECT * FROM conversations"#
-        )
-        .fetch_all(&pool)
-        .await?;
+        let recs = sqlx::query_as!(Conversation, r#"SELECT * FROM conversations"#)
+            .fetch_all(&pool)
+            .await?;
         Ok(recs)
     }
     pub async fn get_messages(&self, pool: PgPool) -> Result<Vec<Message>> {
@@ -40,15 +44,17 @@ impl Conversation {
         .await?;
         Ok(recs)
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct Message {
-    pub id: i32,
-    pub conversation_id: i32,
-    pub role: String,
-    pub body: String,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub async fn create_message(&self, pool: PgPool, message: &str) -> Result<Vec<Message>> {
+        let _rec = sqlx::query_as!(
+            Message,
+            r#"INSERT INTO messages (conversation_id, role, body) VALUES ($1, $2, $3) RETURNING *"#,
+            self.id,
+            "user",
+            message
+        )
+        .fetch_one(&pool)
+        .await?;
+        self.get_messages(pool).await
+    }
 }
 

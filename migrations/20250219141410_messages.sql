@@ -2,6 +2,7 @@ begin;
     create table messages (
         id serial primary key,
         conversation_id integer not null references conversations(id),
+        model text,
         role text not null,
         body text not null,
         created_at timestamp not null default now(),

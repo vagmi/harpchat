@@ -1,9 +1,9 @@
 use axum::response::IntoResponse;
 use maud::{html, Markup, Render};
 
-use crate::model::{Conversation, Message};
+use crate::{model::{Conversation, Message}};
 
-use super::{layout, HtmxContext, icons::send_icon};
+use super::{layout, HtmxContext, conversation_detail::ConversationDetail};
 
 #[derive(Debug, Clone)]
 pub struct ConversationsIndex {
@@ -38,7 +38,7 @@ impl ConversationsIndex {
 
     fn conversation_list(&self) -> Markup {
         let create_button = html! {
-            button ."bg-violet-500 text-white p-2 rounded-lg" 
+            button ."bg-violet-500 text-white p-2 rounded-lg cursor-pointer" 
                    hx-post="/conversations" 
                    hx-target=".app" { 
                        "New Conversation" 
@@ -98,37 +98,5 @@ impl Render for ConversationsIndex {
 impl IntoResponse for ConversationsIndex {
     fn into_response(self) -> axum::response::Response {
         self.render().into_response()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ConversationDetail {
-    pub context: HtmxContext,
-    pub conversation: Conversation,
-    pub messages: Vec<Message>,
-}
-
-impl Render for ConversationDetail {
-    fn render(&self) -> maud::Markup {
-        let body = html! {
-            div ."flex-1" {
-                h1 ."text-xl" { (self.conversation.title) }
-                @for message in &self.messages {
-                    div {
-                        p { (message.role) }
-                        p { (message.body) }
-                    }
-                }
-            }
-            form."flex flex-row" method="post" action=(self.context.uri) {
-                div ."flex-1 border-1 border-violet-300" {
-                    input ."w-full p-2 focus:outline-violet-700" type="text" name="message" placeholder="Ask me anything" required="true";
-                }
-                div ."my-2 ml-2 cursor-pointer text-violet-700" {
-                    button ."cursor-pointer"  hx-post=(self.context.uri) hx-target=".conversation-detail" type="submit" { (send_icon()) }
-                }
-            }
-        };
-        body
     }
 }

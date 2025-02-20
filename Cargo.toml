@@ -11,9 +11,11 @@ chrono = "0.4.39"
 genai = "0.1.22-WIP"
 maud = { version = "0.27.0", features = ["axum"] }
 serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
 sqlx = {version="0.8.3", features=["runtime-tokio-rustls", "postgres", "chrono", "json"]}
 thiserror = "2.0.11"
 tokio = { version = "1.43.0", features = ["full"] }
+tokio-stream = {version="0.1.17", features=["full"] }
 tracing = "0.1.41"
 tracing-subscriber = {version="0.3.19", features=["env-filter"]}
 

@@ -7,6 +7,7 @@ use maud::{html, Markup};
 pub mod icons;
 pub mod index;
 pub mod conversations;
+pub mod conversation_detail;
 
 #[derive(Debug, Clone)]
 pub struct HtmxContext {
@@ -89,6 +90,7 @@ fn layout(title: Option<String>, body: Markup, context: HtmxContext) -> Markup {
                 title { (title) }
                 link rel="stylesheet" href="/static/style.css";
                 script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous" {}
+                script src="https://unpkg.com/htmx-ext-sse@2.2.2" integrity="sha384-fw+eTlCc7suMV/1w/7fr2/PmwElUIt5i82bi+qTiLXvjRXZ2/FkiTNA/w0MhXnGI" crossorigin="anonymous" {}
             }
             body ."min-h-screen flex flex-col" {
                 div ."container mx-auto" {
