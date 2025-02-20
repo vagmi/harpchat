@@ -36,7 +36,7 @@ impl ConversationsIndex {
         }
     }
 
-    fn conversation_list(&self) -> Markup {
+    pub fn conversation_list(&self) -> Markup {
         let create_button = html! {
             button ."bg-violet-500 text-white p-2 rounded-lg cursor-pointer" 
                    hx-post="/conversations" 
@@ -70,7 +70,7 @@ impl Render for ConversationsIndex {
     fn render(&self) -> maud::Markup {
         let body = html! {
             div ."flex flex-row w-full h-full" {
-                div ."flex flex-col basis-1/4" {
+                div ."flex flex-col basis-1/4" hx-get="/conversations/_list" hx-trigger="refreshConversations from:body"  {
                     (self.conversation_list())
                 }
                 div ."flex flex-col basis-3/4 conversation-detail h-full ml-2" {

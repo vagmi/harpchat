@@ -28,6 +28,16 @@ impl Conversation {
         .await?;
         Ok(rec)
     }
+    pub async fn update_title(&self, pool: PgPool, title: &str) -> Result<Conversation> {
+        let rec = sqlx::query_as!(
+            Conversation,
+            r#"update conversations set title=$1 where id=$2 returning *"#,
+            title, self.id
+        )
+        .fetch_one(&pool)
+        .await?;
+        Ok(rec)
+    }
     pub async fn get_all(pool: PgPool) -> Result<Vec<Conversation>> {
         let recs = sqlx::query_as!(Conversation, r#"SELECT * FROM conversations"#)
             .fetch_all(&pool)

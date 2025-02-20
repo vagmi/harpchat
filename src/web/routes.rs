@@ -31,6 +31,14 @@ async fn conversations_view(
     let conversations = Conversation::get_all(app_state.db_pool).await?;
     Ok(conversations::ConversationsIndex::new(context, conversations).render())
 }
+#[debug_handler]
+async fn conversations_list(
+    State(app_state): State<AppState>,
+    context: HtmxContext,
+) -> Result<Markup> {
+    let conversations = Conversation::get_all(app_state.db_pool).await?;
+    Ok(conversations::ConversationsIndex::new(context, conversations).conversation_list())
+}
 
 #[debug_handler]
 async fn new_conversation(
@@ -106,13 +114,15 @@ async fn send_message(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Form(msg_form): Form<MessageForm>,
-) -> Result<()> {
+) -> Result<HeaderMap> {
     let msg = msg_form.message;
     let pool = state.db_pool;
     let conversation = Conversation::find(pool.clone(), id).await?;
     let _messages = conversation.create_message(pool.clone(), &msg, None).await?;
     conversation.send_to_ai(pool.clone()).await?;
-    Ok(())
+    let mut headers = HeaderMap::new();
+    headers.insert("HX-Trigger", "refreshConversations".parse().unwrap());
+    Ok(headers)
 }
 #[debug_handler]
 async fn subscribe_handler(
@@ -152,6 +162,7 @@ pub fn setup_view_router() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
         .route("/conversations", get(conversations_view))
+        .route("/conversations/_list", get(conversations_list))
         .route("/conversations", post(new_conversation))
         .route("/conversations/{id}", get(conversation_view))
         .route("/conversations/{id}", post(send_message))
