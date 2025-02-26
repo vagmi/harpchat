@@ -20,7 +20,7 @@ use crate::{
 };
 
 use super::views::{
-    self, conversation_detail::ConversationDetail, conversations, not_found, HtmxContext,
+    self, conversation_detail::{message_form, ConversationDetail}, conversations, not_found, HtmxContext,
 };
 
 #[debug_handler]
@@ -114,7 +114,7 @@ async fn send_message(
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Form(msg_form): Form<MessageForm>,
-) -> Result<HeaderMap> {
+) -> Result<Markup> {
     let msg = msg_form.message;
     let pool = state.db_pool;
     let conversation = Conversation::find(pool.clone(), id).await?;
@@ -122,7 +122,7 @@ async fn send_message(
     conversation.send_to_ai(pool.clone()).await?;
     let mut headers = HeaderMap::new();
     headers.insert("HX-Trigger", "refreshConversations".parse().unwrap());
-    Ok(headers)
+    Ok(message_form(&conversation))
 }
 #[debug_handler]
 async fn subscribe_handler(

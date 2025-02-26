@@ -43,9 +43,25 @@ static SPINNER: &str = r#"
   </svg>
 "#;
 
+pub fn message_form(conversation: &Conversation) -> Markup {
+    let post_uri = format!("/conversations/{}", conversation.id);
+    html! {
+        form #message-form ."flex flex-row" method="post" action=(post_uri) {
+            div ."flex-1 border-1 border-violet-300" {
+                input ."w-full p-2 focus:outline-violet-700" type="text" name="message" placeholder="Ask me anything" required="true";
+            }
+            div #"loading" ."htmx-indicator" {
+                (PreEscaped(SPINNER))
+            }
+            div ."my-2 ml-2 cursor-pointer text-violet-700" {
+                button ."cursor-pointer" hx-indicator="#loading" hx-swap="outerHTML" hx-target="#message-form" hx-post=(post_uri) hx-swap="none" type="submit" { (send_icon()) }
+            }
+        }
+    }
+}
+
 impl Render for ConversationDetail {
     fn render(&self) -> maud::Markup {
-        let post_uri = format!("/conversations/{}", self.conversation.id);
         let body = html! {
             div ."flex flex-col flex-1 h-full" {
                 h1 ."text-xl" { (self.conversation.title) }
@@ -55,17 +71,7 @@ impl Render for ConversationDetail {
                     }
                     div ."sse-container" {}
                 }
-                form."flex flex-row" method="post" action=(self.context.uri) {
-                    div ."flex-1 border-1 border-violet-300" {
-                        input ."w-full p-2 focus:outline-violet-700" type="text" name="message" placeholder="Ask me anything" required="true";
-                    }
-                    div #"loading" ."htmx-indicator" {
-                        (PreEscaped(SPINNER))
-                    }
-                    div ."my-2 ml-2 cursor-pointer text-violet-700" {
-                        button ."cursor-pointer" hx-indicator="#loading" hx-post=(post_uri) hx-swap="none" type="submit" { (send_icon()) }
-                    }
-                }
+                {(message_form(&self.conversation))}
             }
         };
         body
