@@ -1,11 +1,11 @@
 use crate::model::{Conversation, Message};
 use crate::error::Result;
-use chrono::{DateTime, Local, NaiveDateTime, Utc};
+use chrono::{NaiveDateTime, Utc};
 use genai::chat::{ChatMessage, ChatRequest, ChatRole, MessageContent};
 use genai::Client;
 use sqlx::PgPool;
 use tokio::sync::mpsc::UnboundedSender;
-use futures::{StreamExt, Stream};
+use futures::StreamExt;
 
 impl Into<ChatMessage> for Message {
     fn into(self) -> ChatMessage {
@@ -45,6 +45,7 @@ impl Conversation {
         }
         Ok(())
     }
+    #[allow(dead_code)]
     pub async fn send_to_ai(&self, pool: PgPool) -> Result<()> {
         let client = Client::default();
         let req= self.to_chat_request(pool.clone()).await?;
@@ -73,7 +74,9 @@ impl Conversation {
                         model: Some("gpt-4o-mini".to_string()),
                         role: "Assistant".to_string(),
                         body: msg_content.clone(),
+                        #[allow(deprecated)]
                         created_at: NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0),
+                        #[allow(deprecated)]
                         updated_at: NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0)
                     };
                     tx.send(msg).unwrap();
@@ -82,7 +85,6 @@ impl Conversation {
                     // ignore reasoning
                 }
                 genai::chat::ChatStreamEvent::End(_) => {
-                    let final_message = msg_content.clone();
                     self.create_message(pool.clone(), &msg_content, Some("Assistant")).await?;
                     self.summarize_request(pool.clone()).await?;
                 }

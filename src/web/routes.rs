@@ -1,16 +1,15 @@
-use std::{convert::Infallible, time::Duration};
+use std::convert::Infallible;
 
 use axum::{
     debug_handler,
     
     extract::{Path, State},
     http::{header, HeaderMap},
-    response::{IntoResponse, Redirect, sse::{Sse, Event, KeepAlive}},
+    response::{IntoResponse, Redirect, sse::{Sse, Event}},
     routing::{get, post},
     Form, Router,
 };
-use chrono::format::Item;
-use maud::{html, Markup, Render};
+use maud::{Markup, Render};
 use tokio_stream::{wrappers::UnboundedReceiverStream, Stream, StreamExt};
 use tower_sessions::{session::Id, Session};
 

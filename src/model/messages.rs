@@ -1,10 +1,9 @@
-use std::time::Duration;
 
 use crate::error::Result;
 use chrono::NaiveDateTime;
 use serde_json::Value;
 use sqlx::{postgres::PgListener, PgPool};
-use tokio::{select, sync::mpsc::UnboundedSender};
+use tokio::sync::mpsc::UnboundedSender;
 use tracing::debug;
 
 #[allow(dead_code)]

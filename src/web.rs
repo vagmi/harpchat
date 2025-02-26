@@ -5,7 +5,7 @@ mod views;
 
 use crate::{error::Result, state::AppState};
 use axum::Router;
-use tower_sessions::{session_store, MemoryStore, SessionManagerLayer};
+use tower_sessions::{MemoryStore, SessionManagerLayer};
 
 
 pub async fn start_server(state: AppState) -> Result<()> {

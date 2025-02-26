@@ -2,10 +2,11 @@ use maud::{html, Markup, PreEscaped, Render};
 
 use crate::model::{Conversation, Message};
 
-use super::{icons::send_icon, layout, HtmxContext};
+use super::{icons::send_icon, HtmxContext};
 
 #[derive(Debug, Clone)]
 pub struct ConversationDetail {
+    #[allow(dead_code)]
     pub context: HtmxContext,
     pub conversation: Conversation,
     pub messages: Vec<Message>,
