@@ -12,6 +12,7 @@ use axum::{
 use chrono::format::Item;
 use maud::{html, Markup, Render};
 use tokio_stream::{wrappers::UnboundedReceiverStream, Stream, StreamExt};
+use tower_sessions::{session::Id, Session};
 
 use crate::{
     error::Result,
@@ -111,28 +112,33 @@ pub struct MessageForm {
 
 #[debug_handler]
 async fn send_message(
+    session: Session,
     State(state): State<AppState>,
     Path(id): Path<i32>,
     Form(msg_form): Form<MessageForm>,
 ) -> Result<Markup> {
+    let sess_id = session.id().unwrap_or(Id(0));
+    let tx = state.tx_map.lock().unwrap().get(&sess_id).unwrap().clone();
     let msg = msg_form.message;
     let pool = state.db_pool;
     let conversation = Conversation::find(pool.clone(), id).await?;
     let _messages = conversation.create_message(pool.clone(), &msg, None).await?;
-    conversation.send_to_ai(pool.clone()).await?;
+    conversation.stream_from_ai(pool.clone(), tx).await?;
     let mut headers = HeaderMap::new();
     headers.insert("HX-Trigger", "refreshConversations".parse().unwrap());
     Ok(message_form(&conversation))
 }
 #[debug_handler]
 async fn subscribe_handler(
+    session: Session,
     State(app_state): State<AppState>,
-    context: HtmxContext,
+    // context: HtmxContext,
     Path(id): Path<i32>,
 ) -> Sse<impl Stream<Item=std::result::Result<Event, Infallible>>> {
-
+    let sess_id = session.id().unwrap_or(Id(0));
     let pool = app_state.db_pool.clone();
     let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<Message>();
+    app_state.tx_map.lock().unwrap().insert(sess_id, tx.clone());
     tokio::spawn(Message::subscribe(id, pool, tx));
     let stream = UnboundedReceiverStream::new(rx).map(|f| {
         Ok(Event::default().data(f.render_with_sse().into_string()).event("chat"))

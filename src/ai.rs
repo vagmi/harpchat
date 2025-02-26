@@ -1,8 +1,11 @@
 use crate::model::{Conversation, Message};
 use crate::error::Result;
+use chrono::{DateTime, Local, NaiveDateTime, Utc};
 use genai::chat::{ChatMessage, ChatRequest, ChatRole, MessageContent};
 use genai::Client;
 use sqlx::PgPool;
+use tokio::sync::mpsc::UnboundedSender;
+use futures::{StreamExt, Stream};
 
 impl Into<ChatMessage> for Message {
     fn into(self) -> ChatMessage {
@@ -50,6 +53,39 @@ impl Conversation {
             if let Some(msg_str) = content.text_into_string() {
                 self.create_message(pool.clone(), &msg_str, Some("Assistant")).await?;
                 self.summarize_request(pool).await?;
+            }
+        }
+        Ok(())
+    }
+    pub async fn stream_from_ai(&self, pool: PgPool, tx: UnboundedSender<Message>) -> Result<()> {
+        let client = Client::default();
+        let req= self.to_chat_request(pool.clone()).await?;
+        let mut chat_res = client.exec_chat_stream("gpt-4o-mini", req, None).await?;
+        let mut msg_content: String = String::new();
+        while let Some(Ok(evt)) = chat_res.stream.next().await {
+            match evt {
+                genai::chat::ChatStreamEvent::Start => {}, 
+                genai::chat::ChatStreamEvent::Chunk(txt) =>  {
+                    msg_content.push_str(&txt.content);
+                    let msg = Message {
+                        id: 0,
+                        conversation_id: self.id,
+                        model: Some("gpt-4o-mini".to_string()),
+                        role: "Assistant".to_string(),
+                        body: msg_content.clone(),
+                        created_at: NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0),
+                        updated_at: NaiveDateTime::from_timestamp(Utc::now().timestamp(), 0)
+                    };
+                    tx.send(msg).unwrap();
+                },
+                genai::chat::ChatStreamEvent::ReasoningChunk(_) => {
+                    // ignore reasoning
+                }
+                genai::chat::ChatStreamEvent::End(_) => {
+                    let final_message = msg_content.clone();
+                    self.create_message(pool.clone(), &msg_content, Some("Assistant")).await?;
+                    self.summarize_request(pool.clone()).await?;
+                }
             }
         }
         Ok(())

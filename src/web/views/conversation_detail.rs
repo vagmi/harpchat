@@ -2,7 +2,7 @@ use maud::{html, Markup, PreEscaped, Render};
 
 use crate::model::{Conversation, Message};
 
-use super::{layout, HtmxContext, icons::send_icon};
+use super::{icons::send_icon, layout, HtmxContext};
 
 #[derive(Debug, Clone)]
 pub struct ConversationDetail {
@@ -24,6 +24,13 @@ impl Render for Message {
 }
 impl Message {
     pub fn render_with_sse(&self) -> maud::Markup {
+        if self.id == 0 {
+            return html! {
+                div ."sse-container" {
+                    (self)
+                }
+            };
+        }
         html! {
             (self)
             div ."sse-container" {}
